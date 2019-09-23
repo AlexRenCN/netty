@@ -358,6 +358,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     /**
+     * 重建当前的Selector来解决epoll导致100%CPU占用bug
      * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s to work
      * around the infamous epoll 100% CPU bug.
      */
@@ -380,41 +381,55 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     private void rebuildSelector0() {
+        //旧的Selector
         final Selector oldSelector = selector;
+        //新的Selector包装类
         final SelectorTuple newSelectorTuple;
 
         if (oldSelector == null) {
+            //旧的Selector不存在就不用重建
             return;
         }
 
         try {
+            //开启一个新的Selector
             newSelectorTuple = openSelector();
         } catch (Exception e) {
             logger.warn("Failed to create a new Selector.", e);
             return;
         }
 
+        //旧的Selector里所有的channels到注册到新的Selector上
         // Register all channels to the new Selector.
         int nChannels = 0;
         for (SelectionKey key: oldSelector.keys()) {
             Object a = key.attachment();
             try {
+                //如果key无效了 或者 使用这个key能在新的Selector上检索到 就跳过
                 if (!key.isValid() || key.channel().keyFor(newSelectorTuple.unwrappedSelector) != null) {
                     continue;
                 }
 
+                //获取这个channel关注的事件集合
                 int interestOps = key.interestOps();
+                //取消和旧Selector的关联
                 key.cancel();
+                //注册到新的Selector上
                 SelectionKey newKey = key.channel().register(newSelectorTuple.unwrappedSelector, interestOps, a);
+                //如果channel关联了SelectionKey
                 if (a instanceof AbstractNioChannel) {
                     // Update SelectionKey
+                    //修改channel里的SelectionKey
                     ((AbstractNioChannel) a).selectionKey = newKey;
                 }
+                //换绑成功计数器+1
                 nChannels ++;
             } catch (Exception e) {
                 logger.warn("Failed to re-register a Channel to the new Selector.", e);
                 if (a instanceof AbstractNioChannel) {
+                    //如果channel关联了SelectionKey
                     AbstractNioChannel ch = (AbstractNioChannel) a;
+                    //关闭这个channel
                     ch.unsafe().close(ch.unsafe().voidPromise());
                 } else {
                     @SuppressWarnings("unchecked")

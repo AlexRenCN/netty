@@ -30,12 +30,14 @@ import java.util.concurrent.TimeUnit;
 public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<EventExecutor> {
 
     /**
+     * 在当前EventExecutorGroup管理的EventExecutor正在执行shutdownGracefully或者已经执行isShutdown时返回true，代表当前事件处理组已关闭
      * Returns {@code true} if and only if all {@link EventExecutor}s managed by this {@link EventExecutorGroup}
      * are being {@linkplain #shutdownGracefully() shut down gracefully} or was {@linkplain #isShutdown() shut down}.
      */
     boolean isShuttingDown();
 
     /**
+     * 优雅关闭
      * Shortcut method for {@link #shutdownGracefully(long, long, TimeUnit)} with sensible default values.
      *
      * @return the {@link #terminationFuture()}
@@ -43,6 +45,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     Future<?> shutdownGracefully();
 
     /**
+     * 优雅关闭
      * Signals this executor that the caller wants the executor to be shut down.  Once this method is called,
      * {@link #isShuttingDown()} starts to return {@code true}, and the executor prepares to shut itself down.
      * Unlike {@link #shutdown()}, graceful shutdown ensures that no tasks are submitted for <i>'the quiet period'</i>
@@ -79,6 +82,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     List<Runnable> shutdownNow();
 
     /**
+     * 返回一个当前EventExecutorGroup管理的EventExecutor
      * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.
      */
     EventExecutor next();

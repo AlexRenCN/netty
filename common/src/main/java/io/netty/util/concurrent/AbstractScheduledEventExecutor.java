@@ -112,6 +112,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
+     * 返回一个Runnable
      * Return the {@link Runnable} which is ready to be executed with the given {@code nanoTime}.
      * You should use {@link #nanoTime()} to retrieve the correct {@code nanoTime}.
      */
@@ -119,10 +120,14 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         assert inEventLoop();
 
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
+        //查看延时任务队列的任务
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
+        //如果没有任务或者这个任务还没到时间
         if (scheduledTask == null || scheduledTask.deadlineNanos() - nanoTime > 0) {
+            //返回没有任务
             return null;
         }
+        //如果有任务，将这个任务从延时任务队列中移除并返回，交给外面来执行
         scheduledTaskQueue.remove();
         return scheduledTask;
     }

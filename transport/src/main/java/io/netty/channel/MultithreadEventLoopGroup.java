@@ -38,6 +38,7 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
 
     static {
         DEFAULT_EVENT_LOOP_THREADS = Math.max(1, SystemPropertyUtil.getInt(
+                //获取可用的CPU数量*2 或者配置重写过的线程数量
                 "io.netty.eventLoopThreads", NettyRuntime.availableProcessors() * 2));
 
         if (logger.isDebugEnabled()) {
@@ -70,6 +71,7 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
 
     @Override
     protected ThreadFactory newDefaultThreadFactory() {
+        //修改线程优先级为最高
         return new DefaultThreadFactory(getClass(), Thread.MAX_PRIORITY);
     }
 

@@ -88,6 +88,7 @@ public final class NettyRuntime {
     }
 
     /**
+     * 获取可用的CPU数量，可以被io.netty.availableProcessors重写
      * Get the configured number of available processors. The default is {@link Runtime#availableProcessors()}. This
      * can be overridden by setting the system property "io.netty.availableProcessors" or by invoking
      * {@link #setAvailableProcessors(int)} before any calls to this method.

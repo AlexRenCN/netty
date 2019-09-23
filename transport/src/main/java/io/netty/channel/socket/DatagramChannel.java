@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 
 /**
+ * UDP/IP请求管道
  * A UDP/IP {@link Channel}.
  */
 public interface DatagramChannel extends Channel {

@@ -28,6 +28,7 @@ public final class RejectedExecutionHandlers {
     private static final RejectedExecutionHandler REJECT = new RejectedExecutionHandler() {
         @Override
         public void rejected(Runnable task, SingleThreadEventExecutor executor) {
+            //直接抛出任务注册失败的异常
             throw new RejectedExecutionException();
         }
     };
@@ -52,17 +53,22 @@ public final class RejectedExecutionHandlers {
         return new RejectedExecutionHandler() {
             @Override
             public void rejected(Runnable task, SingleThreadEventExecutor executor) {
+                //只在EventLoop里处理
                 if (!executor.inEventLoop()) {
+                    //再次尝试添加这个任务，直到上限
                     for (int i = 0; i < retries; i++) {
+                        //唤醒执行器并执行任务
                         // Try to wake up the executor so it will empty its task queue.
                         executor.wakeup(false);
-
+                        //在此堵塞等待
                         LockSupport.parkNanos(backOffNanos);
+                        //添加新的任务
                         if (executor.offerTask(task)) {
                             return;
                         }
                     }
                 }
+                //不再EventLoop或者多次尝试添加失败抛出异常
                 // Either we tried to add the task from within the EventLoop or we was not able to add it even with
                 // backoff.
                 throw new RejectedExecutionException();

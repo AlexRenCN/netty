@@ -70,6 +70,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
+     * 设置父（接收者）子（客户端）事件处理组，用来处理所有的ServerChannel和Channel的IO事件
+     * 是一个多Reactor多线程的模型
      * Set the {@link EventLoopGroup} for the parent (acceptor) and the child (client). These
      * {@link EventLoopGroup}'s are used to handle all the events and IO for {@link ServerChannel} and
      * {@link Channel}'s.

@@ -28,6 +28,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 抽象时间处理器实现
  * Abstract base class for {@link EventExecutor} implementations.
  */
 public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {
@@ -36,7 +37,13 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     static final long DEFAULT_SHUTDOWN_QUIET_PERIOD = 2;
     static final long DEFAULT_SHUTDOWN_TIMEOUT = 15;
 
+    /**
+     * 所属的EventExecutorGroup事件执行器组
+     */
     private final EventExecutorGroup parent;
+    /**
+     * 时间处理器数组，只包含自己
+     */
     private final Collection<EventExecutor> selfCollection = Collections.<EventExecutor>singleton(this);
 
     protected AbstractEventExecutor() {
@@ -47,26 +54,46 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
         this.parent = parent;
     }
 
+    /**
+     * 返回所属的EventExecutorGroup事件执行器组
+     * @return
+     */
     @Override
     public EventExecutorGroup parent() {
         return parent;
     }
 
+    /**
+     * 返回对自身的引用
+     * @return
+     */
     @Override
     public EventExecutor next() {
         return this;
     }
 
+    /**
+     * 当前线程是不是在EventLoop中
+     * @return
+     */
     @Override
     public boolean inEventLoop() {
         return inEventLoop(Thread.currentThread());
     }
 
+    /**
+     * 处理器集合的迭代器
+     * @return
+     */
     @Override
     public Iterator<EventExecutor> iterator() {
         return selfCollection.iterator();
     }
 
+    /**
+     * 优雅关闭
+     * @return
+     */
     @Override
     public Future<?> shutdownGracefully() {
         return shutdownGracefully(DEFAULT_SHUTDOWN_QUIET_PERIOD, DEFAULT_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
@@ -156,12 +183,15 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     }
 
     /**
+     * 指定给定的任务，在发生异常的时候记录日志
      * Try to execute the given {@link Runnable} and just log if it throws a {@link Throwable}.
      */
     protected static void safeExecute(Runnable task) {
         try {
+            //执行提交的任务
             task.run();
         } catch (Throwable t) {
+            //任务发生异常，记录异常内容
             logger.warn("A task raised an exception. Task: {}", task, t);
         }
     }

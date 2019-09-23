@@ -20,6 +20,7 @@ import io.netty.channel.ServerChannel;
 import java.net.InetSocketAddress;
 
 /**
+ * 服务端用来监听TCP/IP请求的管道
  * A TCP/IP {@link ServerChannel} which accepts incoming TCP/IP connections.
  */
 public interface ServerSocketChannel extends ServerChannel {
