@@ -21,8 +21,15 @@ import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Set;
 
+/**
+ * 基于SelectedSelectionKeySet作为Selector实现
+ */
 final class SelectedSelectionKeySetSelector extends Selector {
+
     private final SelectedSelectionKeySet selectionKeys;
+    /**
+     * java的原始Selector
+     */
     private final Selector delegate;
 
     SelectedSelectionKeySetSelector(Selector delegate, SelectedSelectionKeySet selectionKeys) {
@@ -52,7 +59,9 @@ final class SelectedSelectionKeySetSelector extends Selector {
 
     @Override
     public int selectNow() throws IOException {
+        //重置selectionKey包装类
         selectionKeys.reset();
+        //使用select选择一个请求
         return delegate.selectNow();
     }
 

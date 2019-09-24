@@ -32,6 +32,9 @@ import java.util.concurrent.ThreadFactory;
  */
 public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor implements EventLoop {
 
+    /**
+     * 任务队列最大任务数量
+     */
     protected static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
@@ -76,11 +79,21 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
         return (EventLoop) super.next();
     }
 
+    /**
+     * 注册到Channel上
+     * @param channel
+     * @return
+     */
     @Override
     public ChannelFuture register(Channel channel) {
         return register(new DefaultChannelPromise(channel, this));
     }
 
+    /**
+     * 注册到Channel上
+     * @param promise
+     * @return
+     */
     @Override
     public ChannelFuture register(final ChannelPromise promise) {
         ObjectUtil.checkNotNull(promise, "promise");
@@ -88,6 +101,12 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
         return promise;
     }
 
+    /**
+     * 注册到Channel上
+     * @param channel
+     * @param promise
+     * @return
+     */
     @Deprecated
     @Override
     public ChannelFuture register(final Channel channel, final ChannelPromise promise) {
@@ -110,15 +129,21 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
     @UnstableApi
     public final void executeAfterEventLoopIteration(Runnable task) {
         ObjectUtil.checkNotNull(task, "task");
+        //如果正在关闭
         if (isShutdown()) {
+            //拒绝任务
             reject();
         }
 
+        //尝试添加任务
         if (!tailTasks.offer(task)) {
+            //添加失败，拒绝任务，交给处理器处理
             reject(task);
         }
 
+        //查看是否需要唤醒线程
         if (wakesUpForTask(task)) {
+            //唤醒线程
             wakeup(inEventLoop());
         }
     }
@@ -140,13 +165,23 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
         runAllTasksFrom(tailTasks);
     }
 
+    /**
+     * 判断当前是否还有任务
+     * @return
+     */
     @Override
     protected boolean hasTasks() {
+        //根据父类队列和自身队列判断
         return super.hasTasks() || !tailTasks.isEmpty();
     }
 
+    /**
+     * 获得当前任务数量
+     * @return
+     */
     @Override
     public int pendingTasks() {
+        //根据父类队列和自身队列相加统计
         return super.pendingTasks() + tailTasks.size();
     }
 

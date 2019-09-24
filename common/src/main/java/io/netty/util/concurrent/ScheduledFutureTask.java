@@ -27,13 +27,29 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFuture<V>, PriorityQueueNode {
+    /**
+     * 任务序号发号器
+     */
     private static final AtomicLong nextTaskId = new AtomicLong();
+    /**
+     * 定时任务起始时间
+     */
     private static final long START_TIME = System.nanoTime();
 
+    /**
+     * 距离执行的时间还有多久
+     * @return
+     */
     static long nanoTime() {
+        //相对于起始时间的差距
         return System.nanoTime() - START_TIME;
     }
 
+    /**
+     * 延迟执行
+     * @param delay
+     * @return
+     */
     static long deadlineNanos(long delay) {
         long deadlineNanos = nanoTime() + delay;
         // Guard against overflow
@@ -44,8 +60,22 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return START_TIME;
     }
 
+
+    /**
+     * 任务编号,递增
+     */
     private final long id = nextTaskId.getAndIncrement();
+    /**
+     * 任务到期时间
+     */
     private long deadlineNanos;
+    /**
+     * 任务执行周期
+     * 0不重复
+     * >0以固定的时间重复
+     * <0以实际的实际重复
+     * 固定时间和实际时间的区别就是定时任务执行的时间需不需要算进去
+     */
     /* 0 - no repeat, >0 - repeat at fixed rate, <0 - repeat with fixed delay */
     private final long periodNanos;
 
@@ -92,14 +122,29 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return deadlineToDelayNanos(deadlineNanos());
     }
 
+    /**
+     * 距离当前时间，还有多久才要执行
+     * @param deadlineNanos
+     * @return
+     */
     static long deadlineToDelayNanos(long deadlineNanos) {
         return Math.max(0, deadlineNanos - nanoTime());
     }
 
+    /**
+     * 距离指定时间还有多久执行
+     * @param currentTimeNanos
+     * @return
+     */
     public long delayNanos(long currentTimeNanos) {
         return Math.max(0, deadlineNanos() - (currentTimeNanos - START_TIME));
     }
 
+    /**
+     * 获取到期时间并转换时间单位
+     * @param unit
+     * @return
+     */
     @Override
     public long getDelay(TimeUnit unit) {
         return unit.convert(delayNanos(), TimeUnit.NANOSECONDS);
@@ -112,6 +157,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         }
 
         ScheduledFutureTask<?> that = (ScheduledFutureTask<?>) o;
+        //使用两个任务的到期时间作为排序项
         long d = deadlineNanos() - that.deadlineNanos();
         if (d < 0) {
             return -1;
@@ -129,22 +175,34 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     public void run() {
         assert executor().inEventLoop();
         try {
+            //如果是只执行一次的任务
             if (periodNanos == 0) {
+                //设置任务不可取消
                 if (setUncancellableInternal()) {
+                    //执行任务
                     V result = task.call();
+                    //设置任务为执行成果
                     setSuccessInternal(result);
                 }
             } else {
+                //定时的任务，检查是不是已经被取消了
                 // check if is done as it may was cancelled
                 if (!isCancelled()) {
+                    //如果没有取消就执行任务
                     task.call();
+                    //如果执行器没有关闭
                     if (!executor().isShutdown()) {
+                        //设置下次执行时间
                         if (periodNanos > 0) {
+                            //固定时间，上次时间+间隔
                             deadlineNanos += periodNanos;
                         } else {
+                            //实际时间，当前时间+间隔
                             deadlineNanos = nanoTime() - periodNanos;
                         }
+                        //如果任务没有取消
                         if (!isCancelled()) {
+                            //添加到任务队列中等待下次执行
                             // scheduledTaskQueue can never be null as we lazy init it before submit the task!
                             Queue<ScheduledFutureTask<?>> scheduledTaskQueue =
                                     ((AbstractScheduledEventExecutor) executor()).scheduledTaskQueue;
@@ -155,6 +213,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                 }
             }
         } catch (Throwable cause) {
+            //设置为执行失败
             setFailureInternal(cause);
         }
     }
@@ -166,8 +225,11 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
      */
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
+        //移除任务
         boolean canceled = super.cancel(mayInterruptIfRunning);
+        //如果移除成功
         if (canceled) {
+            //从任务队列中移除
             ((AbstractScheduledEventExecutor) executor()).removeScheduled(this);
         }
         return canceled;

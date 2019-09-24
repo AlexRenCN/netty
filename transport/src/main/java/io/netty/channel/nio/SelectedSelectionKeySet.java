@@ -23,7 +23,13 @@ import java.util.NoSuchElementException;
 
 final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
 
+    /**
+     * SelectionKey数组
+     */
     SelectionKey[] keys;
+    /**
+     * 数组可读大小
+     */
     int size;
 
     SelectedSelectionKeySet() {
@@ -36,7 +42,9 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
             return false;
         }
 
+        //添加一个SelectionKey
         keys[size++] = o;
+        //如果到达上限，进行扩容
         if (size == keys.length) {
             increaseCapacity();
         }
@@ -94,7 +102,9 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
     }
 
     private void increaseCapacity() {
+        //扩容到两倍容量
         SelectionKey[] newKeys = new SelectionKey[keys.length << 1];
+        //复制SelectionKey数组
         System.arraycopy(keys, 0, newKeys, 0, size);
         keys = newKeys;
     }
